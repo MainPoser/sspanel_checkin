@@ -10,6 +10,7 @@ const $ = new require('./env').Env('SSPANEL面板自动签到');
 const notify = $.isNode() ? require('./sendNotify') : '';
 let total = $.isNode() ? (process.env.SITE_ACCOUNTS ? process.env.SITE_ACCOUNTS : '') : ($.getdata('SITE_ACCOUNTS') ? $.getdata('SITE_ACCOUNTS') : ''),
     totalList = [], message = '';
+let sessionCookie = '';
 
 // 如果大于 -1 说明是多账号，存入到数组中，否则就是单账号！
 if (total.indexOf('&') > -1) {
@@ -108,6 +109,11 @@ function login() {
                 if (err) {
                     console.log(`登录 API 请求失败，请把下方报错日志发给 Telegram@sudojia\n${JSON.stringify(err)}`)
                 } else {
+                    const setCookie = response.headers['set-cookie'];
+                    if (setCookie && setCookie.length > 0) {
+                        sessionCookie = setCookie.map(c => c.split(';')[0]).join('; ');
+                        console.log(`已提取 Cookie: ${sessionCookie}`);
+                    }
                     data = JSON.parse(data);
                     console.log(data.msg, '\n');
                 }
@@ -131,7 +137,8 @@ function sendPost(path, body = {}) {
             "Origin": `${$.SITE_URL}`,
             "Referer": `${$.SITE_URL}`,
             "Accept-encoding": "gzip, deflate, br",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36",
+            ...(sessionCookie ? { "Cookie": sessionCookie } : {})
         }
     }
 }
